@@ -36,7 +36,7 @@ export class ChangeScalaToSqlComponent implements OnInit {
   download() {
     const element = document.createElement('a');
     if (!this.convertedQuery) {
-      alert('No data Found!!');
+      alert('No data Found!');
       return false;
     }
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(this.convertedQuery));
