@@ -16,19 +16,24 @@ export class ChangeScalaToSqlComponent implements OnInit {
   constructor(private http: HttpClient) { }
 
   ngOnInit() {
+    this.db = 'MySql';
   }
 
   submit() {
-
-    this.http.get('http://10.17.200.92:9000/sql', { responseType: 'text' })
+    const queryWithoutLeadingSPace = this.query.replace(/^\s+/gm, '');
+    const body = {
+      databaseName: this.db,
+      sqlQuery: queryWithoutLeadingSPace
+    };
+    this.http.post('http://10.17.209.134:9000/sqlToSparkConverter', body, { responseType: 'text' })
       .pipe(map((response: any) => response)).subscribe(
         (data: any) => {
           this.convertedQuery = data;
         },
         err => {
-          // alert('Oops!! Something Went Wrong!!');
+          alert('Oops!! Something Went Wrong!!');
           console.log(err);
-          this.convertedQuery = `select * from table`;
+          // this.convertedQuery = `select * from table`;
         }
       );
   }
