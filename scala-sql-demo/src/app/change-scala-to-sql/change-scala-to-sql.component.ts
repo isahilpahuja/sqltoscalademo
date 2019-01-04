@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { catchError, map, tap } from 'rxjs/operators';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 
 @Component({
   selector: 'app-change-scala-to-sql',
@@ -12,6 +13,8 @@ export class ChangeScalaToSqlComponent implements OnInit {
   db = '';
   query: any;
   convertedQuery: any;
+  convertedQueryException: any;
+  isShowSpinner: boolean;
 
   constructor(private http: HttpClient) { }
 
@@ -19,23 +22,48 @@ export class ChangeScalaToSqlComponent implements OnInit {
     this.db = 'MySql';
   }
 
-  submit() {
-    const queryWithoutLeadingSPace = this.query.replace(/^\s+/gm, '');
+  submit(conversionType: String) {
+    const queryWithoutLeadingSPace = this.query ? this.query.replace(/^\s+/gm, '') : '';
     const body = {
       databaseName: this.db,
-      sqlQuery: queryWithoutLeadingSPace
+      sqlQuery: queryWithoutLeadingSPace,
+      conversionType: conversionType
     };
-    this.http.post('http://10.17.209.134:9000/sqlToSparkConverter', body, { responseType: 'text' })
-      .pipe(map((response: any) => response)).subscribe(
-        (data: any) => {
-          this.convertedQuery = data;
-        },
-        err => {
-          alert('Oops!! Something Went Wrong!!');
-          console.log(err);
-          // this.convertedQuery = `select * from table`;
-        }
-      );
+    this.isShowSpinner = true;
+    if (conversionType === 'Scala') {
+      this.http.post('http://10.17.200.92:9000/storedProcedureToSparkConverter', body, { responseType: 'text' })
+        .pipe(map((response: any) => response)).subscribe(
+          (data: any) => {
+            const convertedData = data;
+            this.convertedQuery = convertedData.substring(0, convertedData.indexOf('#'));
+            this.convertedQueryException = convertedData.substring(convertedData.indexOf('#') + 1);
+            this.isShowSpinner = false;
+          },
+          err => {
+            alert('Oops!! Something Went Wrong!!');
+            this.convertedQuery = '';
+            this.convertedQueryException = '';
+            this.isShowSpinner = false;
+          }
+        );
+    } else {
+      this.http.post('http://10.17.200.92:9000/sqlToDataFrameConverter', body, { responseType: 'text' })
+        .pipe(map((response: any) => response)).subscribe(
+          (data: any) => {
+            const convertedData = data;
+            this.convertedQuery = convertedData.substring(0, convertedData.indexOf('#'));
+            this.convertedQueryException = convertedData.substring(convertedData.indexOf('#') + 1);
+            this.isShowSpinner = false;
+          },
+          err => {
+            alert('Oops!! Something Went Wrong!!');
+            this.convertedQuery = '';
+            this.convertedQueryException = '';
+            this.isShowSpinner = false;
+          }
+        );
+    }
+
   }
 
   download() {
@@ -53,9 +81,10 @@ export class ChangeScalaToSqlComponent implements OnInit {
   }
 
   reset() {
-    this.db = '';
+    this.db = 'MySql';
     this.query = '';
     this.convertedQuery = '';
-
+    this.convertedQueryException = '';
+    this.isShowSpinner = false;
   }
 }
